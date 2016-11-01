@@ -57,6 +57,7 @@ def compute_ranks(graph):#Computing ranks for a given graph -> for all the links
 	numloops=10
 	ranks={}
 	npages=len(graph)
+	print str(npages)+" are the total number of pages"
 	for page in graph:
 		ranks[page]=1.0/npages
 	for i in range(0,numloops):
