@@ -16,6 +16,7 @@ def union(a,b):#The union function merges the second list into first, with out d
 	for e in b:
 		if e not in a:
 			a.append(e)
+	return a;
 
 def get_next_url(page):
 	start_link=page.find("a href")
@@ -31,33 +32,39 @@ def get_all_links(page):
 		url,n=get_next_url(page)
 		page=page[n:]
 		if url:
+			# print "url = "+url
 			links.append(url)
 		else:
 			break
 	return links
 def Look_up(index,keyword):#This function is for given an index, it finds the keyword in the index and returns the list of links
 	#f=[]
+	# pages = [];
+	# keywords = keyword.split();
+	# for k in keywords:
 	if keyword in index:
 		return index[keyword]
+		# if k in index:
+		# 	pages.append(index[keyword]);
 	return []
 #The format of element in the index is <keyword>,[<List of urls that contain the keyword>]
 def add_to_index(index,url,keyword):
-
 	if keyword in index:
 		if url not in index[keyword]:
+			print "keyword = "+str(keyword)
 			index[keyword].append(url)
 		return
 	index[keyword]=[url]
+
 def add_page_to_index(index,url,content):#Adding the content of the webpage to the index
 	for i in content.split():
 		add_to_index(index,url,i)
 
-def compute_ranks(graph):#Computing ranks for a given graph -> for all the links in it
+def compute_ranks(graph): #Computing ranks for a given graph -> for all the links in it
 	d=0.8
 	numloops=10
 	ranks={}
 	npages=len(graph)
-	print str(npages)+" are the total number of pages"
 	for page in graph:
 		ranks[page]=1.0/npages
 	for i in range(0,numloops):
@@ -77,24 +84,52 @@ def Crawl_web(seed):#The website to act as seed page is given as input
 	index={}
 	graph={}#new graph
 	global max_limit
-	while tocrawl:
+	depth = max_limit
+	counter = 0
+	while len(tocrawl) > 0 :
 		p=tocrawl.pop()
+		# print "Counter = "+str(counter)
+		print "Current size = "+str(len(tocrawl))
+		print "Current page = "+str(p)
 		if p not in crawled:#To remove the looping, if a page is already crawled and it is backlinked again by someother link we are crawling, we need not crawl it again
-			max_limit-=1
-			print max_limit
-			if max_limit<=0:
-				break
+			# max_limit-=1
+			# print max_limit
+			# if max_limit<=0:
+			# 	break
 			c=get_page(p)
 			add_page_to_index(index,p,c)
 			f=get_all_links(c)
-			union(tocrawl,f)
-			graph[p]=f
 			crawled.append(p)#As soon as a link is crawled it is appended to crawled. In the end when all the links are over, we will return the crawled since it contains all the links we have so far
+			crawled, index, graph = Crawl_web2(depth - 1 , f, crawled, index, graph)
+			# print "f = "+str(f)
+			# tocrawl = union(tocrawl,f)
+			graph[p]=f
+			counter+=1
+	return crawled,index,graph #the list of links
+
+def Crawl_web2(depth, f, crawled, index, graph):#The website to act as seed page is given as input
+	if depth >= 0:
+		counter = 0
+		while len(f) > 0:
+			p=f.pop()
+			# print "Counter = "+str(counter)
+			print "Current size = "+str(len(f))
+			print "Current page = "+str(p)
+			if p not in crawled:#To remove the looping, if a page is already crawled and it is backlinked again by someother link we are crawling, we need not crawl it again
+				# max_limit-=1
+				# print max_limit
+				# if max_limit<=0:
+				# 	break
+				c=get_page(p)
+				add_page_to_index(index,p,c)
+				next_links=get_all_links(c)
+				# print "f = "+str(next_links)
+				# f = union(f,next_links)
+				graph[p]=next_links
+				crawled.append(p)#As soon as a link is crawled it is appended to crawled. In the end when all the links are over, we will return the crawled since it contains all the links we have so far
+				# counter+=1
+				crawled, index, graph = Crawl_web2(depth - 1, next_links, crawled, index, graph)
 	return crawled,index,graph #Returns the list of links
-
-#print index	
-
-
 
 def QuickSort(pages,ranks):#Sorting in descending order
 	if len(pages)>1:
@@ -137,9 +172,3 @@ crawled,index,graph=Crawl_web(seed_page)#printing all the links
 
 ranks=compute_ranks(graph)#Calculating the page ranks
 Look_up_new(index,ranks,search_term)
-		
-
-	
-	
-
-	
