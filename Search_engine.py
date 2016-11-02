@@ -1,6 +1,7 @@
 #!/usr/bin/python
 #Author : dileep98490@gmail.com
 import urllib
+from bs4 import BeautifulSoup
 max_limit=5
 def get_page(url):#This function is just to return the webpage contents; the source of the webpage when a url is given.
 	try:
@@ -51,14 +52,39 @@ def Look_up(index,keyword):#This function is for given an index, it finds the ke
 def add_to_index(index,url,keyword):
 	if keyword in index:
 		if url not in index[keyword]:
-			print "keyword = "+str(keyword)
-			index[keyword].append(url)
+			try:
+				print "keyword = "+str(keyword)
+				index[keyword].append(url)
+			except:
+				print " "
 		return
 	index[keyword]=[url]
 
 def add_page_to_index(index,url,content):#Adding the content of the webpage to the index
+	# Add function splitter here
+	content = my_page_cleaner(content)
 	for i in content.split():
 		add_to_index(index,url,i)
+
+def my_page_cleaner(page_content): #A robust function which uses beautiful soup for extracting text
+	soup = BeautifulSoup(page_content)
+
+	# kill all script and style elements
+	for script in soup(["script", "style"]):
+		script.extract()  # rip it out
+
+	# get text
+	text = soup.get_text()
+
+	# break into lines and remove leading and trailing space on each
+	lines = (line.strip() for line in text.splitlines())
+	# break multi-headlines into a line each
+	chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+	# drop blank lines
+	text = '\n'.join(chunk for chunk in chunks if chunk)
+
+	# print(text)
+	return text
 
 def compute_ranks(graph): #Computing ranks for a given graph -> for all the links in it
 	d=0.8
@@ -122,10 +148,10 @@ def Crawl_web2(depth, f, crawled, index, graph):#The website to act as seed page
 				# 	break
 				c=get_page(p)
 				add_page_to_index(index,p,c)
-				next_links=get_all_links(c)
+				next_links = get_all_links(c)
 				# print "f = "+str(next_links)
 				# f = union(f,next_links)
-				graph[p]=next_links
+				graph[p] = next_links
 				crawled.append(p)#As soon as a link is crawled it is appended to crawled. In the end when all the links are over, we will return the crawled since it contains all the links we have so far
 				# counter+=1
 				crawled, index, graph = Crawl_web2(depth - 1, next_links, crawled, index, graph)
@@ -154,7 +180,7 @@ def Look_up_new(index,ranks,keyword):
 	it=0
 	for i in pages:#This is how actually it looks like in search engine results - > sorted by page rank
 		it+=1
-		print str(it)+'.\t'+i+'\n' 
+		print str(it)+'.\t'+i+'\t'+str(keyword)+'\n'
 
 
 #print index
@@ -171,4 +197,6 @@ print '\nStarted crawling, presently at depth..'
 crawled,index,graph=Crawl_web(seed_page)#printing all the links
 
 ranks=compute_ranks(graph)#Calculating the page ranks
-Look_up_new(index,ranks,search_term)
+searches = search_term.split();
+for i in searches:
+	Look_up_new(index,ranks,i)
